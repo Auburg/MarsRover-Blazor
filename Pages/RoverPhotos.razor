@@ -1,0 +1,50 @@
+﻿@using MarsRover.Models;
+@using MarsRover.Services;
+@inject MarsRover.Services.IRoverEventService roverEventService;
+
+
+  @if (Photos != null)
+  {  
+
+    <div class="container">
+
+      <hr class="mt-2 mb-5">
+
+      <div class="row inner-right text-center text-lg-left">
+
+        @foreach (var photo in Photos)
+        {
+          <div class="col-lg-3 col-md-4 col-6">
+            <a href="#" class="d-block mb-4 h-100">
+              <img class="img-fluid img-thumbnail" src="@photo.img_src" alt="">
+            </a>
+          </div>          
+        }
+
+        </div>
+    </div>
+
+  }
+  else
+  {
+    <div col-sm-4>No photos available</div>
+  }
+
+
+@code {
+
+    protected override void OnInitialized()
+    {
+      base.OnInitialized();
+      roverEventService.NewPhotosEvent += OnNewPhotos;
+    }
+
+    public void OnNewPhotos(object sender, PhotoEventArgs photoEvent)
+    {
+      Photos = photoEvent.Photos;
+      StateHasChanged();
+    }
+
+    public Photo[] Photos { get; set; }
+
+}

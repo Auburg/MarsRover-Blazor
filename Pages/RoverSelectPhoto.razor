@@ -1,0 +1,109 @@
+﻿@using MarsRover.Models;
+@inject MarsRover.Services.IMarsRoverApi marsApi;
+@inject MarsRover.Services.IRoverEventService roverEventService;
+
+<div class="@vis">
+  @if (photoManifest != null)
+  {
+    <div class="row">     
+      <div class="container">
+        <div class="row">
+          <div class="col-md-3">
+            Select Sol
+          </div>
+          <div class="col-md-3">
+            Earth Date
+          </div>
+          <div class="col-md-3">
+            Total Photos
+          </div>
+          <div class="col-md-3">
+            Cameras
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-xl-3">
+            <input id="sol" type="number"
+                   value="@sol"
+                   min="0"
+                   max="@PhotoManifest?.max_sol"
+                   step="1"
+                   @onchange="solChanged" />
+          </div>
+          <div class="col-xl-3">@selectedPhotoMetadata.earth_date</div>
+          <div class="col-xl-2">@selectedPhotoMetadata.total_photos</div>
+          <div class="col-sm-3">
+            <select @bind="selectedCamera" class="custom-select w-100" required>
+              @foreach (var camera in selectedPhotoMetadata.cameras)
+              {
+                <option>@camera</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary mt-4" @onclick="GetPhotos">Get Photos</button>
+
+  }
+</div>
+
+@code {
+
+    private PhotoManifest photoManifest;
+    private PhotoMetadata selectedPhotoMetadata;
+    private MarsRover.Models.RootPhotoData rootPhotoData;
+
+    private string vis { get; set; }
+    private string selectedCamera { get; set; }
+    private int sol { get; set; }
+
+    protected override void OnInitialized()
+    {
+      base.OnInitialized();
+      vis = "d-none";
+    }
+
+    public void solChanged(ChangeEventArgs e)
+    {
+      int index = int.Parse(e.Value.ToString());
+      selectedPhotoMetadata = photoManifest.photos[index];
+      this.StateHasChanged();
+    }
+
+    //public void onKeyDown(KeyboardEventArgs e)
+    //{
+    //  if (sol > PhotoManifest.max_sol)
+    //  {
+    //    sol = PhotoManifest.max_sol - 1;
+    //  }
+    //  else if (sol < 0)
+    //  {
+    //    sol = 0;
+    //  }
+    //}
+
+    public async Task GetPhotos()
+    {
+      rootPhotoData = await marsApi.GetRoverPhotosAsync(RoverName, selectedPhotoMetadata.sol, selectedCamera);
+      roverEventService.RaisePhotosEvent(rootPhotoData.photos);
+    }
+
+    [Parameter]
+    public string RoverName { get; set; }
+
+    [Parameter]
+    public MarsRover.Models.PhotoManifest PhotoManifest
+    {
+      get { return photoManifest; }
+      set
+      {
+        photoManifest = value;
+        sol = 0;
+        selectedPhotoMetadata = photoManifest?.photos[0];
+        vis = null;
+        this.StateHasChanged();
+      }
+    }
+}

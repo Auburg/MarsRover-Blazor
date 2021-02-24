@@ -1,0 +1,86 @@
+﻿@inject HttpClient Http
+@inject MarsRover.Services.IMarsRoverApi marsApi;
+@inject IJSRuntime JSRuntime
+
+
+<div class="col-md-5 mb-3">
+  <image src="https://mars.nasa.gov/system/resources/detail_files/25466_PIA24343-web.jpg" width="50%" height="25%"></image>
+  @if (rovers == null)
+  {
+    <p><em>Loading...</em></p>
+  }
+  else
+  {
+    <select @onchange="onRoverChanged" class="custom-select h-100 d-block w-25 my-3" id="rovers" required>
+
+          @foreach (var rover in rovers)
+          {
+            <option>@rover</option>
+          }
+      </select>   
+  }
+
+  @if (photoManifest != null)
+  {
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Landing Date</th>
+          <th>Launch Date</th>
+          <th>Status</th>
+          <th>Max Sol</th>
+          <th>Max Date</th>
+          <th>Total Photos</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>@photoManifest.name</td>
+          <td>@photoManifest.landing_date</td>
+          <td>@photoManifest.launch_date</td>
+          <td>@photoManifest.status</td>
+          <td>@photoManifest.max_sol</td>
+          <td>@photoManifest.max_date</td>
+          <td>@photoManifest.total_photos</td>
+        </tr>
+      </tbody>
+    </table>
+  }
+
+  <RoverSelectPhoto RoverName="@selectedRover" PhotoManifest="@photoManifest" />
+
+</div>
+
+
+@code {
+
+    private MarsRover.Models.PhotoManifest photoManifest;
+    private string selectedRover;
+
+    private string[] rovers;
+
+    protected override async Task OnInitializedAsync()
+    {
+      rovers = await Http.GetFromJsonAsync<string[]>("rover-data/rovers.json");
+      selectedRover = rovers.First();
+
+      await UpdateRoverMetaData();
+
+    }
+
+    private async Task UpdateRoverMetaData()
+    {
+      var ret = await marsApi.GetRoverManifestAsync(selectedRover);
+
+      photoManifest = ret.photoManifest;      
+  
+      this.StateHasChanged();
+    }
+
+    private async Task onRoverChanged(ChangeEventArgs e)
+    {
+      selectedRover = e.Value.ToString();
+      await UpdateRoverMetaData();
+    }
+}
